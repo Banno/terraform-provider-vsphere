@@ -1,10 +1,5 @@
 package vsphere
 
-/*import (
-	"github.com/hashicorp/terraform/helper/resource"
-	"log"
-)*/
-
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -81,22 +76,46 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	info, err := task.WaitForResult(nil)
+	_, err = task.WaitForResult(nil)
 
 	if err != nil {
 		return err
 	}
 
-	if info.State == "success" {
-		fmt.Printf("%s Registered!", d.Get("vm_name").(string))
-	}
+  d.SetId(d.Get("vm_name").(string))
 
-	fmt.Printf("%s", d.Id())
-
-	return nil
+	return resourceVsphereVmRead(d, meta)
 }
 
 func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
+  client := meta.(*govmomi.Client)
+
+  finder := find.NewFinder(client, false)
+
+  datacenter, err := finder.DefaultDatacenter()
+
+  if err != nil {
+    return err
+  }
+
+  finder.SetDatacenter(datacenter)
+
+  if err != nil {
+    return err
+  }
+
+  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+
+  if err != nil {
+    if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
+      d.SetId("")
+      return nil
+    }
+  }
+
+  d.Set("inventory_path", vm.InventoryPath)
+ 
+
 	return nil
 }
 
@@ -105,5 +124,40 @@ func resourceVsphereVmUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVsphereVmDelete(d *schema.ResourceData, meta interface{}) error {
-	return nil
+  client := meta.(*govmomi.Client)
+
+  finder := find.NewFinder(client, false)
+
+  datacenter, err := finder.DefaultDatacenter()
+
+  if err != nil {
+    return err
+  }
+
+  finder.SetDatacenter(datacenter)
+
+  if err != nil {
+    return err
+  }
+
+  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+
+  if err != nil {
+    return err
+  }
+
+  task, err := vm.Destroy()
+
+  if err != nil {
+    return err
+  }
+
+  _, err = task.WaitForResult(nil)
+
+  if err != nil {
+    return err
+  }
+
+  return nil
+
 }
