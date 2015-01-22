@@ -104,7 +104,7 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
     return err
   }
 
-  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+  _, err = finder.VirtualMachine(d.Get("vm_name").(string))
 
   if err != nil {
     if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
@@ -112,9 +112,6 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
       return nil
     }
   }
-
-  d.Set("inventory_path", vm.InventoryPath)
- 
 
 	return nil
 }
