@@ -6,6 +6,7 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/vim25/types"
+  "github.com/vmware/govmomi/vim25/mo"
 )
 
 func resourceVsphereVm() *schema.Resource {
@@ -26,6 +27,18 @@ func resourceVsphereVm() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+      "ip_address": &schema.Schema{
+        Type:   schema.TypeString,
+        Computed: true,
+      },
+      "cpus": &schema.Schema{
+        Type: schema.TypeInt,
+        Required: true,
+      },
+      "memory_mb": &schema.Schema{
+        Type: schema.TypeInt,
+        Required: true,
+      },
 		},
 	}
 }
@@ -64,7 +77,13 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	clonespec := types.VirtualMachineCloneSpec{
-		Config: &types.VirtualMachineConfigSpec{},
+		Config: &types.VirtualMachineConfigSpec{
+      NumCPUs: d.Get("cpus").(int),
+      MemoryMB: int64(d.Get("memory_mb").(int)),
+      CpuHotAddEnabled: true,
+      CpuHotRemoveEnabled: true,
+      MemoryHotAddEnabled: true,
+    },
 		Location: types.VirtualMachineRelocateSpec{
 			Pool: &rpRef,
 		},
@@ -104,7 +123,7 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
     return err
   }
 
-  _, err = finder.VirtualMachine(d.Get("vm_name").(string))
+  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
 
   if err != nil {
     if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
@@ -113,11 +132,62 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
     }
   }
 
+  props := []string{"summary"}
+  
+
+  var mvm mo.VirtualMachine
+
+  err = client.Properties(vm.Reference(), props, &mvm)
+
+  if err != nil {
+    return err
+  }
+
+ 
+  d.Set("memory_mb", mvm.Summary.Config.MemorySizeMB)
+  d.Set("cpus", mvm.Summary.Config.NumCpu)
+
 	return nil
 }
 
 func resourceVsphereVmUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
+  client := meta.(*govmomi.Client)
+
+  finder := find.NewFinder(client, false)
+
+  datacenter, err := finder.DefaultDatacenter()
+
+  if err != nil {
+    return err
+  }
+
+  finder.SetDatacenter(datacenter)
+
+  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+
+  if err != nil {
+    return err
+  }
+
+  configspec := types.VirtualMachineConfigSpec{
+      NumCPUs: d.Get("cpus").(int),
+      MemoryMB: int64(d.Get("memory_mb").(int)),
+  }
+
+  task, err := vm.Reconfigure(configspec)
+
+  if err != nil {
+    return err
+  }
+
+  _, err = task.WaitForResult(nil)
+
+
+  if err != nil {
+    return err
+  }
+
+	return resourceVsphereVmRead(d, meta)
 }
 
 func resourceVsphereVmDelete(d *schema.ResourceData, meta interface{}) error {
