@@ -8,9 +8,9 @@ package vsphere
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-  "github.com/vmware/govmomi"
-  "github.com/vmware/govmomi/find"
-  "github.com/vmware/govmomi/vim25/types"
+	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/find"
+	"github.com/vmware/govmomi/vim25/types"
 )
 
 func resourceVsphereVm() *schema.Resource {
@@ -26,88 +26,84 @@ func resourceVsphereVm() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-      "vm_name": &schema.Schema{
-        Type:     schema.TypeString,
-        Required: true,
-        ForceNew: true,
-      },
+			"vm_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
 
 func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
-  client := meta.(*govmomi.Client) 
-  
-  finder := find.NewFinder(client, false)
+	client := meta.(*govmomi.Client)
 
-  datacenter, err := finder.DefaultDatacenter()
+	finder := find.NewFinder(client, false)
 
-  if err != nil {
-    return err
-  }
+	datacenter, err := finder.DefaultDatacenter()
 
-  finder.SetDatacenter(datacenter)
+	if err != nil {
+		return err
+	}
 
-  resourcePool, err := finder.DefaultResourcePool()
+	finder.SetDatacenter(datacenter)
 
-  if err != nil {
-    return err
-  }
+	resourcePool, err := finder.DefaultResourcePool()
 
-  rpRef := resourcePool.Reference()
+	if err != nil {
+		return err
+	}
 
-  vm, err := finder.VirtualMachine(d.Get("template_name").(string))
+	rpRef := resourcePool.Reference()
 
-  if err != nil {
-    return err
-  }
+	vm, err := finder.VirtualMachine(d.Get("template_name").(string))
 
-  folders, err := datacenter.Folders()
+	if err != nil {
+		return err
+	}
 
-  if err != nil {
-    return err
-  }
+	folders, err := datacenter.Folders()
 
-  clonespec := types.VirtualMachineCloneSpec{
-    Config: &types.VirtualMachineConfigSpec{},
-    Location: types.VirtualMachineRelocateSpec{
-      Pool: &rpRef,
-    },
-  }
+	if err != nil {
+		return err
+	}
 
+	clonespec := types.VirtualMachineCloneSpec{
+		Config: &types.VirtualMachineConfigSpec{},
+		Location: types.VirtualMachineRelocateSpec{
+			Pool: &rpRef,
+		},
+	}
 
-  task, err := vm.Clone(folders.VmFolder,d.Get("vm_name").(string),clonespec)
+	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
 
+	if err != nil {
+		return err
+	}
 
-  if err != nil {
-    return err
-  }
+	info, err := task.WaitForResult(nil)
 
-  info, err := task.WaitForResult(nil)
-  
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  if info.State == "success" {
-    fmt.Printf("%s Registered!", d.Get("vm_name").(string))
-  }
+	if info.State == "success" {
+		fmt.Printf("%s Registered!", d.Get("vm_name").(string))
+	}
 
-  fmt.Printf("%s", d.Id())
+	fmt.Printf("%s", d.Id())
 
-
-
-  return nil
+	return nil
 }
 
 func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
-  return nil
+	return nil
 }
 
 func resourceVsphereVmUpdate(d *schema.ResourceData, meta interface{}) error {
-  return nil
+	return nil
 }
 
 func resourceVsphereVmDelete(d *schema.ResourceData, meta interface{}) error {
-  return nil
+	return nil
 }

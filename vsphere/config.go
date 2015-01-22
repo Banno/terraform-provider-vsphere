@@ -15,19 +15,19 @@ type Config struct {
 }
 
 func (c *Config) Client() (*govmomi.Client, error) {
-  client  := newClient(c)
+	client := newClient(c)
 
-  return client, nil
+	return client, nil
 }
 
-func newClient(c *Config) (*govmomi.Client) {
- sdk_url,_ := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk",
-    c.Username,
-    c.Password,
-    c.URL))
+func newClient(c *Config) *govmomi.Client {
+	sdk_url, _ := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk",
+		c.Username,
+		c.Password,
+		c.URL))
 
-    client, _ := govmomi.NewClient(*sdk_url, true)
+	client, _ := govmomi.NewClient(*sdk_url, true)
 
-  return client
+	return client
 
 }

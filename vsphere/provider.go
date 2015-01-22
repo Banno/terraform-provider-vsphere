@@ -24,9 +24,9 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("VSPHERE_URL", nil),
 			},
 		},
-		ResourcesMap:  map[string]*schema.Resource{
-      "vsphere_vm": resourceVsphereVm(),
-    },
+		ResourcesMap: map[string]*schema.Resource{
+			"vsphere_vm": resourceVsphereVm(),
+		},
 		ConfigureFunc: providerConfigure,
 	}
 }
@@ -37,5 +37,5 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Password: d.Get("vsphere_password").(string),
 		URL:      d.Get("vsphere_url").(string),
 	}
-  return config.Client()
+	return config.Client()
 }
