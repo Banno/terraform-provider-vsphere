@@ -1,4 +1,4 @@
-package main
+package vsphere
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
@@ -24,7 +24,9 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("VSPHERE_URL", nil),
 			},
 		},
-		ResourcesMap:  map[string]*schema.Resource{},
+		ResourcesMap:  map[string]*schema.Resource{
+      "vsphere_vm": resourceVsphereVm(),
+    },
 		ConfigureFunc: providerConfigure,
 	}
 }
@@ -32,12 +34,8 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
 		Username: d.Get("vsphere_username").(string),
-		Password: d.get("vsphere_password").(string),
-		URL:      d.get("vsphere_url").(string),
+		Password: d.Get("vsphere_password").(string),
+		URL:      d.Get("vsphere_url").(string),
 	}
-	if err := config.loadAndValidate(); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
+  return config.Client()
 }
