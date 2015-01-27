@@ -30,6 +30,8 @@ func resourceVsphereVm() *schema.Resource {
       "ip_address": &schema.Schema{
         Type:   schema.TypeString,
         Computed: true,
+        ForceNew: true,
+        Optional: true,
       },
       "cpus": &schema.Schema{
         Type: schema.TypeInt,
@@ -39,10 +41,9 @@ func resourceVsphereVm() *schema.Resource {
         Type: schema.TypeInt,
         Required: true,
       },
-      "static_ip": &schema.Schema{
+      "customization_specification": &schema.Schema{
         Type: schema.TypeString,
-        Optional: true,
-        ForceNew: true,
+        Required: true,
       },
 		},
 	}
@@ -86,7 +87,6 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
       NumCPUs: d.Get("cpus").(int),
       MemoryMB: int64(d.Get("memory_mb").(int)),
       CpuHotAddEnabled: true,
-      CpuHotRemoveEnabled: true,
       MemoryHotAddEnabled: true,
     },
 		Location: types.VirtualMachineRelocateSpec{
@@ -95,17 +95,33 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
     PowerOn: true,
 	}
 
-  ipAddress := d.Get("static_ip").(string)
+  ipAddress := d.Get("ip_address").(string)
   
+  specManager := client.CustomizationSpecManager()
+  specItem, err := specManager.GetCustomizationSpec(d.Get("customization_specification").(string))
+  if err != nil {
+    return err
+  }
+
   if ipAddress != "" {
     ip := types.CustomizationFixedIp{
       IpAddress: ipAddress,
     }
-    specManager := client.CustomizationSpecManager()
-    specItem, _ := specManager.GetCustomizationSpec("Ubuntu 1")
     specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
-    clonespec.Customization = &specItem.Spec
+  } else {
+    ip := types.CustomizationDhcpIpGenerator{}
+    specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
   }
+
+  hostName := types.CustomizationFixedName{
+    Name: d.Get("vm_name").(string),
+  }
+
+  linuxPrep := specItem.Spec.Identity.(*types.CustomizationLinuxPrep)
+
+  linuxPrep.HostName = &hostName
+  
+  clonespec.Customization = &specItem.Spec
 
 	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
 
@@ -142,6 +158,7 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
   }
 
   vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+  
 
   if err != nil {
     if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
@@ -149,6 +166,12 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
       return nil
     }
   }
+
+  ip, err := vm.WaitForIP()
+  if err != nil {
+    return err
+  }
+  d.Set("ip_address", ip)
 
   props := []string{"summary"}
   
