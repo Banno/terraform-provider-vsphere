@@ -39,6 +39,10 @@ func resourceVsphereVm() *schema.Resource {
         Type: schema.TypeInt,
         Required: true,
       },
+      "static_ip": &schema.Schema{
+        Type: schema.TypeString,
+        Optional: true,
+      },
 		},
 	}
 }
@@ -87,7 +91,20 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
 		Location: types.VirtualMachineRelocateSpec{
 			Pool: &rpRef,
 		},
+    PowerOn: true,
 	}
+
+  ipAddress := d.Get("static_ip").(string)
+  
+  if ipAddress != "" {
+    ip := types.CustomizationFixedIp{
+      IpAddress: ipAddress,
+    }
+    specManager := client.CustomizationSpecManager()
+    specItem, _ := specManager.GetCustomizationSpec("Ubuntu 1")
+    specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
+    clonespec.Customization = &specItem.Spec
+  }
 
 	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
 
@@ -213,7 +230,19 @@ func resourceVsphereVmDelete(d *schema.ResourceData, meta interface{}) error {
     return err
   }
 
-  task, err := vm.Destroy()
+  task, err := vm.PowerOff()
+
+  if err != nil {
+    return err
+  }
+
+  _, err = task.WaitForResult(nil)
+
+  if err != nil {
+    return err
+  }
+
+  task, err = vm.Destroy()
 
   if err != nil {
     return err
