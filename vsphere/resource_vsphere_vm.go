@@ -9,12 +9,12 @@ import (
   "github.com/vmware/govmomi/vim25/mo"
 )
 
-func resourceVsphereVm() *schema.Resource {
+func resourceVsphereVM() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceVsphereVmCreate,
-		Read:   resourceVsphereVmRead,
-		Update: resourceVsphereVmUpdate,
-		Delete: resourceVsphereVmDelete,
+		Create: resourceVsphereVMCreate,
+		Read:   resourceVsphereVMRead,
+		Update: resourceVsphereVMUpdate,
+		Delete: resourceVsphereVMDelete,
 
 		Schema: map[string]*schema.Schema{
 			"template_name": &schema.Schema{
@@ -49,7 +49,7 @@ func resourceVsphereVm() *schema.Resource {
 	}
 }
 
-func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
 
 	finder := find.NewFinder(client, false)
@@ -87,6 +87,7 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
       NumCPUs: d.Get("cpus").(int),
       MemoryMB: int64(d.Get("memory_mb").(int)),
       CpuHotAddEnabled: true,
+      CpuHotRemoveEnabled: true,
       MemoryHotAddEnabled: true,
     },
 		Location: types.VirtualMachineRelocateSpec{
@@ -137,10 +138,10 @@ func resourceVsphereVmCreate(d *schema.ResourceData, meta interface{}) error {
 
   d.SetId(d.Get("vm_name").(string))
 
-	return resourceVsphereVmRead(d, meta)
+	return resourceVsphereVMRead(d, meta)
 }
 
-func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
+func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
   client := meta.(*govmomi.Client)
 
   finder := find.NewFinder(client, false)
@@ -191,7 +192,7 @@ func resourceVsphereVmRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceVsphereVmUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
   client := meta.(*govmomi.Client)
 
   finder := find.NewFinder(client, false)
@@ -228,10 +229,10 @@ func resourceVsphereVmUpdate(d *schema.ResourceData, meta interface{}) error {
     return err
   }
 
-	return resourceVsphereVmRead(d, meta)
+	return resourceVsphereVMRead(d, meta)
 }
 
-func resourceVsphereVmDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceVsphereVMDelete(d *schema.ResourceData, meta interface{}) error {
   client := meta.(*govmomi.Client)
 
   finder := find.NewFinder(client, false)

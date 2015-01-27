@@ -21,12 +21,12 @@ func (c *Config) Client() (*govmomi.Client, error) {
 }
 
 func newClient(c *Config) *govmomi.Client {
-	sdk_url, _ := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk",
+	sdkURL, _ := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk",
 		c.Username,
 		c.Password,
 		c.URL))
 
-	client, _ := govmomi.NewClient(*sdk_url, true)
+	client, _ := govmomi.NewClient(*sdkURL, true)
 
 	return client
 
