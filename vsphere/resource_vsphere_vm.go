@@ -5,8 +5,8 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
+	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
-  "github.com/vmware/govmomi/vim25/mo"
 )
 
 func resourceVsphereVM() *schema.Resource {
@@ -27,24 +27,24 @@ func resourceVsphereVM() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-      "ip_address": &schema.Schema{
-        Type:   schema.TypeString,
-        Computed: true,
-        ForceNew: true,
-        Optional: true,
-      },
-      "cpus": &schema.Schema{
-        Type: schema.TypeInt,
-        Required: true,
-      },
-      "memory_mb": &schema.Schema{
-        Type: schema.TypeInt,
-        Required: true,
-      },
-      "customization_specification": &schema.Schema{
-        Type: schema.TypeString,
-        Required: true,
-      },
+			"ip_address": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+				ForceNew: true,
+				Optional: true,
+			},
+			"cpus": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"memory_mb": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
+			"customization_specification": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
 		},
 	}
 }
@@ -84,45 +84,45 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	clonespec := types.VirtualMachineCloneSpec{
 		Config: &types.VirtualMachineConfigSpec{
-      NumCPUs: d.Get("cpus").(int),
-      MemoryMB: int64(d.Get("memory_mb").(int)),
-      CpuHotAddEnabled: true,
-      CpuHotRemoveEnabled: true,
-      MemoryHotAddEnabled: true,
-    },
+			NumCPUs:             d.Get("cpus").(int),
+			MemoryMB:            int64(d.Get("memory_mb").(int)),
+			CpuHotAddEnabled:    true,
+			CpuHotRemoveEnabled: true,
+			MemoryHotAddEnabled: true,
+		},
 		Location: types.VirtualMachineRelocateSpec{
 			Pool: &rpRef,
 		},
-    PowerOn: true,
+		PowerOn: true,
 	}
 
-  ipAddress := d.Get("ip_address").(string)
-  
-  specManager := client.CustomizationSpecManager()
-  specItem, err := specManager.GetCustomizationSpec(d.Get("customization_specification").(string))
-  if err != nil {
-    return err
-  }
+	ipAddress := d.Get("ip_address").(string)
 
-  if ipAddress != "" {
-    ip := types.CustomizationFixedIp{
-      IpAddress: ipAddress,
-    }
-    specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
-  } else {
-    ip := types.CustomizationDhcpIpGenerator{}
-    specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
-  }
+	specManager := client.CustomizationSpecManager()
+	specItem, err := specManager.GetCustomizationSpec(d.Get("customization_specification").(string))
+	if err != nil {
+		return err
+	}
 
-  hostName := types.CustomizationFixedName{
-    Name: d.Get("vm_name").(string),
-  }
+	if ipAddress != "" {
+		ip := types.CustomizationFixedIp{
+			IpAddress: ipAddress,
+		}
+		specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
+	} else {
+		ip := types.CustomizationDhcpIpGenerator{}
+		specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
+	}
 
-  linuxPrep := specItem.Spec.Identity.(*types.CustomizationLinuxPrep)
+	hostName := types.CustomizationFixedName{
+		Name: d.Get("vm_name").(string),
+	}
 
-  linuxPrep.HostName = &hostName
-  
-  clonespec.Customization = &specItem.Spec
+	linuxPrep := specItem.Spec.Identity.(*types.CustomizationLinuxPrep)
+
+	linuxPrep.HostName = &hostName
+
+	clonespec.Customization = &specItem.Spec
 
 	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
 
@@ -136,149 +136,145 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-  d.SetId(d.Get("vm_name").(string))
+	d.SetId(d.Get("vm_name").(string))
 
 	return resourceVsphereVMRead(d, meta)
 }
 
 func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
-  client := meta.(*govmomi.Client)
+	client := meta.(*govmomi.Client)
 
-  finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client, false)
 
-  datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter()
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  finder.SetDatacenter(datacenter)
+	finder.SetDatacenter(datacenter)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
-  
+	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
 
-  if err != nil {
-    if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
-      d.SetId("")
-      return nil
-    }
-  }
+	if err != nil {
+		if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
+			d.SetId("")
+			return nil
+		}
+	}
 
-  ip, err := vm.WaitForIP()
-  if err != nil {
-    return err
-  }
-  d.Set("ip_address", ip)
+	ip, err := vm.WaitForIP()
+	if err != nil {
+		return err
+	}
+	d.Set("ip_address", ip)
 
-  props := []string{"summary"}
-  
+	props := []string{"summary"}
 
-  var mvm mo.VirtualMachine
+	var mvm mo.VirtualMachine
 
-  err = client.Properties(vm.Reference(), props, &mvm)
+	err = client.Properties(vm.Reference(), props, &mvm)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
- 
-  d.Set("memory_mb", mvm.Summary.Config.MemorySizeMB)
-  d.Set("cpus", mvm.Summary.Config.NumCpu)
+	d.Set("memory_mb", mvm.Summary.Config.MemorySizeMB)
+	d.Set("cpus", mvm.Summary.Config.NumCpu)
 
 	return nil
 }
 
 func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
-  client := meta.(*govmomi.Client)
+	client := meta.(*govmomi.Client)
 
-  finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client, false)
 
-  datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter()
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  finder.SetDatacenter(datacenter)
+	finder.SetDatacenter(datacenter)
 
-  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  configspec := types.VirtualMachineConfigSpec{
-      NumCPUs: d.Get("cpus").(int),
-      MemoryMB: int64(d.Get("memory_mb").(int)),
-  }
+	configspec := types.VirtualMachineConfigSpec{
+		NumCPUs:  d.Get("cpus").(int),
+		MemoryMB: int64(d.Get("memory_mb").(int)),
+	}
 
-  task, err := vm.Reconfigure(configspec)
+	task, err := vm.Reconfigure(configspec)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  _, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(nil)
 
-
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
 	return resourceVsphereVMRead(d, meta)
 }
 
 func resourceVsphereVMDelete(d *schema.ResourceData, meta interface{}) error {
-  client := meta.(*govmomi.Client)
+	client := meta.(*govmomi.Client)
 
-  finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client, false)
 
-  datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter()
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  finder.SetDatacenter(datacenter)
+	finder.SetDatacenter(datacenter)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  task, err := vm.PowerOff()
+	task, err := vm.PowerOff()
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  _, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(nil)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  task, err = vm.Destroy()
+	task, err = vm.Destroy()
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  _, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(nil)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 
 }
