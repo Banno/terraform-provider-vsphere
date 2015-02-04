@@ -13,9 +13,12 @@ off to make sure that VMware knows that VMWare tools are installed. From there
 we mark it as a template and use that template to deploy from.
 
 ##Environment Variables
+The following need to be defined in your shell profile:
+```
 export VSPHERE_USERNAME="username"
 export VSPHERE_PASSWORD="password"
 export VSPHERE_URL="vsphere.my.domain.com" 
+```
 
 ##Minimal configuration
 ```
