@@ -114,14 +114,6 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 		specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
 	}
 
-	hostName := types.CustomizationFixedName{
-		Name: d.Get("vm_name").(string),
-	}
-
-	linuxPrep := specItem.Spec.Identity.(*types.CustomizationLinuxPrep)
-
-	linuxPrep.HostName = &hostName
-
 	clonespec.Customization = &specItem.Spec
 
 	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
