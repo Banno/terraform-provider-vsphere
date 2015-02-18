@@ -10,14 +10,25 @@ Allows you to define infrastructure for VMWare VSphere.
 ##Use Case
 Our current use case is using packer to upload a VM to VSphere, turn it on, and
 off to make sure that VMware knows that VMWare tools are installed. From there
-we mark it as a template and use that template to deploy from.
+we mark it as a template and use that template to deploy
 
-##Environment Variables
-The following need to be defined in your shell profile:
+## Provider
+
+The provider can be configured manually via
+```
+provider "vsphere" {
+  vsphere_host = "vcenter.my.domain.com"
+  vsphere_username = "username"
+  vsphere_password = "password"
+}
+
+```
+
+or with environmental variables:
 ```
 export VSPHERE_USERNAME="username"
 export VSPHERE_PASSWORD="password"
-export VSPHERE_URL="vsphere.my.domain.com" 
+export VSPHERE_HOST="vsphere.my.domain.com" 
 ```
 
 ##Minimal configuration
