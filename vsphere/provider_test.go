@@ -31,8 +31,8 @@ func TestProvider_impl(t *testing.T) {
 func testAccPreCheck(t *testing.T) {
 	username := os.Getenv("VSPHERE_USERNAME")
 	password := os.Getenv("VSPHERE_PASSWORD")
-	url := os.Getenv("VSPHERE_URL")
-	if username == "" || password == "" || url == "" {
-		t.Fatal("VSPHERE_USERNAME, VSPHERE_PASSWORD and VSPHERE_URL must be set for acceptance tests to work.")
+	host := os.Getenv("VSPHERE_HOST")
+	if username == "" || password == "" || host == "" {
+		t.Fatal("VSPHERE_USERNAME, VSPHERE_PASSWORD and VSPHERE_HOST must be set for acceptance tests to work.")
 	}
 }

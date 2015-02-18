@@ -51,6 +51,9 @@ func resourceVsphereVM() *schema.Resource {
 
 func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
+	if client == nil {
+		return fmt.Errorf("client is nil")
+	}
 
 	finder := find.NewFinder(client, false)
 
