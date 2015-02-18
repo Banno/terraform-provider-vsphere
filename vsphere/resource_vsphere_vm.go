@@ -51,6 +51,9 @@ func resourceVsphereVM() *schema.Resource {
 
 func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
+	if client == nil {
+		return fmt.Errorf("client is nil")
+	}
 
 	finder := find.NewFinder(client, false)
 
@@ -113,14 +116,6 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 		ip := types.CustomizationDhcpIpGenerator{}
 		specItem.Spec.NicSettingMap[0].Adapter.Ip = &ip
 	}
-
-	hostName := types.CustomizationFixedName{
-		Name: d.Get("vm_name").(string),
-	}
-
-	linuxPrep := specItem.Spec.Identity.(*types.CustomizationLinuxPrep)
-
-	linuxPrep.HostName = &hostName
 
 	clonespec.Customization = &specItem.Spec
 
