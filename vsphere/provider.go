@@ -1,6 +1,8 @@
 package vsphere
 
 import (
+	"os"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -31,7 +33,19 @@ func Provider() terraform.ResourceProvider {
 	}
 }
 
+func checkEnvVariable(name string) {
+	if os.Getenv(name) == "" {
+		fmt.Println("Missing %s environment variable", name)
+		os.Exit(3)
+	}
+	return
+}
+
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+	checkEnvVariable("VSPHERE_USERNAME")
+	checkEnvVariable("VSPHERE_PASSWORD")
+	checkEnvVariable("VSPHERE_HOST")
+
 	config := Config{
 		Username: d.Get("vsphere_username").(string),
 		Password: d.Get("vsphere_password").(string),
