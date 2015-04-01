@@ -43,3 +43,6 @@ resource "vsphere_vm" "machine_name" {
 }
 ```
 
+##How to build
+* go get
+* go install
