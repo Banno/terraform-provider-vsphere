@@ -5,8 +5,10 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
+	"golang.org/x/net/context"
 )
 
 func resourceVsphereVM() *schema.Resource {
@@ -55,9 +57,9 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("client is nil")
 	}
 
-	finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client.Client, false)
 
-	datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter(context.TODO())
 
 	if err != nil {
 		return err
@@ -65,7 +67,7 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	finder.SetDatacenter(datacenter)
 
-	resourcePool, err := finder.DefaultResourcePool()
+	resourcePool, err := finder.DefaultResourcePool(context.TODO())
 
 	if err != nil {
 		return err
@@ -73,13 +75,13 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	rpRef := resourcePool.Reference()
 
-	vm, err := finder.VirtualMachine(d.Get("template_name").(string))
+	vm, err := finder.VirtualMachine(context.TODO(), d.Get("template_name").(string))
 
 	if err != nil {
 		return err
 	}
 
-	folders, err := datacenter.Folders()
+	folders, err := datacenter.Folders(context.TODO())
 
 	if err != nil {
 		return err
@@ -101,8 +103,8 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	ipAddress := d.Get("ip_address").(string)
 
-	specManager := client.CustomizationSpecManager()
-	specItem, err := specManager.GetCustomizationSpec(d.Get("customization_specification").(string))
+	specManager := object.NewCustomizationSpecManager(client.Client)
+	specItem, err := specManager.GetCustomizationSpec(context.TODO(), d.Get("customization_specification").(string))
 	if err != nil {
 		return err
 	}
@@ -119,13 +121,13 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	clonespec.Customization = &specItem.Spec
 
-	task, err := vm.Clone(folders.VmFolder, d.Get("vm_name").(string), clonespec)
+	task, err := vm.Clone(context.TODO(), folders.VmFolder, d.Get("vm_name").(string), clonespec)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(context.TODO(), nil)
 
 	if err != nil {
 		return err
@@ -139,9 +141,9 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
 
-	finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client.Client, false)
 
-	datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter(context.TODO())
 
 	if err != nil {
 		return err
@@ -153,7 +155,7 @@ func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+	vm, err := finder.VirtualMachine(context.TODO(), d.Get("vm_name").(string))
 
 	if err != nil {
 		if err.Error() == fmt.Sprintf("vm '%s' not found", d.Get("vm_name").(string)) {
@@ -162,7 +164,7 @@ func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	ip, err := vm.WaitForIP()
+	ip, err := vm.WaitForIP(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -172,7 +174,7 @@ func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 
 	var mvm mo.VirtualMachine
 
-	err = client.Properties(vm.Reference(), props, &mvm)
+	err = vm.Properties(context.TODO(), vm.Reference(), props, &mvm)
 
 	if err != nil {
 		return err
@@ -187,9 +189,9 @@ func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
 
-	finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client.Client, false)
 
-	datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter(context.TODO())
 
 	if err != nil {
 		return err
@@ -197,7 +199,7 @@ func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	finder.SetDatacenter(datacenter)
 
-	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+	vm, err := finder.VirtualMachine(context.TODO(), d.Get("vm_name").(string))
 
 	if err != nil {
 		return err
@@ -208,13 +210,13 @@ func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		MemoryMB: int64(d.Get("memory_mb").(int)),
 	}
 
-	task, err := vm.Reconfigure(configspec)
+	task, err := vm.Reconfigure(context.TODO(), configspec)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(context.TODO(), nil)
 
 	if err != nil {
 		return err
@@ -226,9 +228,9 @@ func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceVsphereVMDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*govmomi.Client)
 
-	finder := find.NewFinder(client, false)
+	finder := find.NewFinder(client.Client, false)
 
-	datacenter, err := finder.DefaultDatacenter()
+	datacenter, err := finder.DefaultDatacenter(context.TODO())
 
 	if err != nil {
 		return err
@@ -240,31 +242,31 @@ func resourceVsphereVMDelete(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	vm, err := finder.VirtualMachine(d.Get("vm_name").(string))
+	vm, err := finder.VirtualMachine(context.TODO(), d.Get("vm_name").(string))
 
 	if err != nil {
 		return err
 	}
 
-	task, err := vm.PowerOff()
+	task, err := vm.PowerOff(context.TODO())
 
 	if err != nil {
 		return err
 	}
 
-	_, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(context.TODO(), nil)
 
 	if err != nil {
 		return err
 	}
 
-	task, err = vm.Destroy()
+	task, err = vm.Destroy(context.TODO())
 
 	if err != nil {
 		return err
 	}
 
-	_, err = task.WaitForResult(nil)
+	_, err = task.WaitForResult(context.TODO(), nil)
 
 	if err != nil {
 		return err

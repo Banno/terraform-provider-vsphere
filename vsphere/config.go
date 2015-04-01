@@ -3,6 +3,7 @@ package vsphere
 import (
 	"fmt"
 	"github.com/vmware/govmomi"
+	"golang.org/x/net/context"
 	"net/url"
 )
 
@@ -21,8 +22,7 @@ func (c *Config) Client() (*govmomi.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	client, err := govmomi.NewClient(*sdkURL, true)
+	client, err := govmomi.NewClient(context.TODO(), sdkURL, true)
 	if err != nil {
 		return nil, err
 	} else {
