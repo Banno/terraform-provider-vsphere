@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/banno/terraform-provider-vsphere/vsphere"
+	"github.com/Banno/terraform-provider-vsphere/vsphere"
 	"github.com/hashicorp/terraform/plugin"
 )
 
