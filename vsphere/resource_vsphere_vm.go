@@ -89,13 +89,15 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	t := true
+
 	clonespec := types.VirtualMachineCloneSpec{
 		Config: &types.VirtualMachineConfigSpec{
 			NumCPUs:             d.Get("cpus").(int),
 			MemoryMB:            int64(d.Get("memory_mb").(int)),
-			CpuHotAddEnabled:    true,
-			CpuHotRemoveEnabled: true,
-			MemoryHotAddEnabled: true,
+			CpuHotAddEnabled:    &t,
+			CpuHotRemoveEnabled: &t,
+			MemoryHotAddEnabled: &t,
 		},
 		Location: types.VirtualMachineRelocateSpec{
 			Pool: &rpRef,
