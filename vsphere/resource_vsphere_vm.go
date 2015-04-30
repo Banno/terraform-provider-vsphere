@@ -3,7 +3,6 @@ package vsphere
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -52,7 +51,10 @@ func resourceVsphereVM() *schema.Resource {
 }
 
 func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*govmomi.Client)
+	client, err := meta.(*Config).Client()
+	if err != nil {
+		return err
+	}
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
@@ -139,7 +141,10 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*govmomi.Client)
+	client, err := meta.(*Config).Client()
+	if err != nil {
+		return err
+	}
 
 	finder := find.NewFinder(client.Client, false)
 
@@ -187,7 +192,10 @@ func resourceVsphereVMRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*govmomi.Client)
+	client, err := meta.(*Config).Client()
+	if err != nil {
+		return err
+	}
 
 	finder := find.NewFinder(client.Client, false)
 
@@ -226,7 +234,10 @@ func resourceVsphereVMUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceVsphereVMDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*govmomi.Client)
+	client, err := meta.(*Config).Client()
+	if err != nil {
+		return err
+	}
 
 	finder := find.NewFinder(client.Client, false)
 
