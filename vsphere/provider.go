@@ -37,5 +37,5 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Password: d.Get("vsphere_password").(string),
 		Host:     d.Get("vsphere_host").(string),
 	}
-	return c, nil
+	return &c, nil
 }
