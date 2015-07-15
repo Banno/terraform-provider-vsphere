@@ -46,6 +46,10 @@ func resourceVsphereVM() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"resource_pool": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -69,10 +73,23 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	finder.SetDatacenter(datacenter)
 
-	resourcePool, err := finder.DefaultResourcePool(context.TODO())
+	var resourcePool *object.ResourcePool
 
-	if err != nil {
-		return err
+	resourcePoolName := d.Get("resource_pool").(string)
+
+	if resourcePoolName != "" {
+		resourcePool, err = finder.ResourcePool(context.TODO(), resourcePoolName)
+
+		if err != nil {
+			return err
+		}
+
+	} else {
+		resourcePool, err = finder.DefaultResourcePool(context.TODO())
+
+		if err != nil {
+			return err
+		}
 	}
 
 	rpRef := resourcePool.Reference()

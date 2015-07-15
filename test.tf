@@ -10,4 +10,5 @@ resource "vsphere_vm" "testing_vsphere_instance" {
   memory_mb = "8192"
   cpus = "4"
   customization_specification = "Ubuntu"
+  # resource_pool = "Dev Cluster/Resources/Dev Pool" # Optional
 }

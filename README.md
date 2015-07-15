@@ -43,6 +43,15 @@ resource "vsphere_vm" "machine_name" {
 }
 ```
 
+##Optional configuration
+```
+resource "vsphere_vm" "machine_name" {
+  ...
+  resource_pool = "Dev Cluster/Resources/Dev Pool"
+  ...
+}
+```
+
 ##How to build
 * go get
 * go install
