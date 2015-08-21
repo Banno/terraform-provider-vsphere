@@ -75,18 +75,14 @@ func resourceVsphereVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	var resourcePool *object.ResourcePool
 
-	resourcePoolName := d.Get("resource_pool").(string)
-
-	if resourcePoolName != "" {
-		resourcePool, err = finder.ResourcePool(context.TODO(), resourcePoolName)
-
+	if resourcePoolName, exists := d.GetOk("resource_pool"); exists {
+		resourcePool, err = finder.ResourcePool(context.TODO(), resourcePoolName.(string))
 		if err != nil {
 			return err
 		}
 
 	} else {
 		resourcePool, err = finder.DefaultResourcePool(context.TODO())
-
 		if err != nil {
 			return err
 		}
