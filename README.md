@@ -1,3 +1,6 @@
+# DEPRECATED IN FAVOR OF TERRAFORM'S OFFICIAL VSPHERE PROVIDER: https://www.terraform.io/docs/providers/vsphere/index.html
+
+
 #VMWare VSphere Provider For Terraform
 
 Allows you to define infrastructure for VMWare VSphere. 
